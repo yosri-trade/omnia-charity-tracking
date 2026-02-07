@@ -1,0 +1,71 @@
+### OMNIA Charity Tracking - API Tests (REST Client)
+### Variables : ajustez baseUrl et, après login, collez le token dans @token
+@baseUrl = http://localhost:5000/api
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5ODY4OTllM2EzMGMwYzU3NDFjYmY1NCIsImlhdCI6MTc3MDQyNDc2NSwiZXhwIjoxNzcxMDI5NTY1fQ.wb5_beSN1F-pvmi-HjLv3Pn6z77iEF11DyA4tKXehvQ
+
+### 1. Register - Créer l'utilisateur admin (à exécuter en premier)
+# Exécutez une seule fois, ou ignorer si l'utilisateur existe déjà (erreur 400)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin Omnia",
+  "email": "admin@omnia.tn",
+  "password": "password123",
+  "role": "ADMIN"
+}
+
+### 2. Login - Récupérer le token
+# Exécutez cette requête puis copiez "token" depuis la réponse JSON
+# Collez la valeur dans la variable @token ci-dessus
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@omnia.tn",
+  "password": "password123"
+}
+
+### 3. Créer une famille (protégé)
+# Remplacez YOUR_TOKEN_HERE par le token obtenu via login
+POST {{baseUrl}}/families
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "Famille Test",
+  "address": "123 Rue de la Solidarité, Tunis",
+  "phone": "+216 12 345 678",
+  "status": "ACTIVE",
+  "needs": ["Alimentaire", "Médical"],
+  "coordinates": {
+    "lat": 36.8065,
+    "lng": 10.1815
+  }
+}
+
+### 4. Lister toutes les familles (protégé)
+GET {{baseUrl}}/families
+Authorization: Bearer {{token}}
+
+### 5. Détails d'une famille par ID (protégé)
+# Remplacez FAMILY_ID par l'_id retourné à la création (ex: copiez depuis la réponse du POST famille)
+@familyId = FAMILY_ID
+GET {{baseUrl}}/families/{{familyId}}
+Authorization: Bearer {{token}}
+
+### 6. Créer une visite (protégé)
+# Remplacez FAMILY_ID par l'_id d'une famille existante
+POST {{baseUrl}}/visits
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "familyId": "69868d52fd55597d30f6e9d9",
+  "types": ["Alimentaire", "Social"],
+  "notes": "Distribution colis alimentaire et soutien moral."
+}
+
+### 7. Historique des visites d'une famille (protégé)
+GET {{baseUrl}}/visits/family/{{familyId}}
+Authorization: Bearer {{token}}
