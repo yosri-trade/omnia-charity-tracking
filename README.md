@@ -1,225 +1,264 @@
-# OMNIA CHARITY TRACKING
+# 🌟 OMNIA Charity Tracking
 
-## 📋 Vue d'ensemble
+> **#MaraTechEsprit2026**
 
-**OMNIA CHARITY TRACKING** est un projet hackathon au service de l'**Association Omnia**. C'est une application web centrée sur les **opérations de terrain** : suivi des familles bénéficiaires, visites sur le terrain, preuves de passage et mesure d'impact. Elle ne gère **ni dons, ni paiements, ni reçus** — uniquement le suivi humanitaire et la traçabilité des interventions.
+Application web de suivi terrain au service de l'**Association Omnia**. Outil de gestion des familles bénéficiaires, des visites humanitaires et de la traçabilité des interventions.
 
-### Vision
+---
 
-Offrir à l'Association Omnia un outil de **suivi terrain** qui permet de :
-- **Gérer les familles bénéficiaires** et leurs besoins de façon structurée
-- **Enregistrer les visites** et l'aide apportée avec preuve de présence (GPS)
-- **Planifier et piloter les missions** de terrain
-- **Visualiser les besoins** et les interventions sur une carte (heatmap)
-- **Signaler les situations urgentes** ou les familles oubliées
-- **Produire des récits d'impact** par famille pour communiquer l'impact réel
-- **Traiter les données de manière éthique** avec des accès restreints par rôle
+## 📖 Description du projet
 
-## 👥 Utilisateurs cibles
+**OMNIA Charity Tracking** est une solution web complète conçue pour accompagner les associations humanitaires dans leurs opérations de terrain. L'application permet de gérer les familles bénéficiaires, d'enregistrer les visites avec preuve GPS, de planifier les missions et de visualiser les besoins sur une carte interactive.
 
-1. **Bénévoles terrain** — Collecte de données sur le terrain, enregistrement des visites, check-in GPS
-2. **Coordinateurs terrain** — Planification des missions, attribution des familles, suivi des alertes
-3. **Président de l'association (admin)** — Vue d'ensemble, rapports d'impact, gestion des utilisateurs et des accès
+L'application ne gère **ni dons, ni paiements, ni reçus** — elle se concentre exclusivement sur le **suivi humanitaire** et la **traçabilité des interventions**.
+
+---
+
+## 🏛️ L'Association Omnia
+
+L'**Association Omnia** est l'organisme bénéficiaire de cette solution. Elle œuvre sur le terrain pour accompagner les familles en difficulté. Cette application lui permet de :
+
+- Structurer et centraliser les données des familles suivies
+- Garantir la traçabilité des visites et de l'aide apportée
+- Prioriser les interventions grâce aux alertes et à la cartographie
+- Produire des récits d'impact pour communiquer avec les partenaires
+
+---
+
+## 👥 Équipe
+
+| Membre | Rôle |
+|--------|------|
+| **Zaineb Ben Dhaw** | Développement |
+| **Yosri Hamdouni** | Développement |
+
+---
 
 ## ✨ Fonctionnalités principales
 
-### Gestion des familles bénéficiaires
-- Fiche famille (composition, besoins, localisation)
-- Historique des visites et de l'aide apportée par famille
-- Statut et priorité (urgence, suivi régulier, etc.)
-- **Impact Story** : résumé narratif automatique de l'accompagnement par famille
+### 👨‍👩‍👧‍👦 Gestion des familles bénéficiaires
+- Fiche famille (nom, adresse, téléphone, statut, composition)
+- Localisation GPS avec carte interactive
+- Historique des visites par famille
+- Statut et priorité (ACTIVE, URGENT)
+- **Impact Story** : résumé narratif automatique de l'accompagnement
 
-### Visites terrain et suivi de l'aide
+### 📋 Visites terrain et suivi de l'aide
 - Création et enregistrement des visites (date, bénévole, famille, type d'aide)
-- **Check-in GPS** comme preuve de visite sur site
-- Suivi des types d'aide distribuée (sans dimension financière / paiement)
+- **Check-in GPS** comme preuve de présence sur site
+- Photo preuve recommandée
+- Notes avec support dictée vocale (Speech-to-Text)
 - Historique complet par famille et par bénévole
 
-### Cartographie interactive et heatmap
-- **Carte interactive** (Leaflet) des familles et des zones d'intervention
+### 🗺️ Cartographie interactive
+- Carte Leaflet des familles et zones d'intervention
 - **Heatmap des besoins** pour prioriser les zones
-- Visualisation des visites et des missions passées
-- Géolocalisation des points de visite (check-in)
+- Géolocalisation des points de visite
+- Visualisation des familles géolocalisées
 
-### Alertes
-- **Alertes urgentes** : familles en situation critique à traiter en priorité
-- **Alertes « oubliées »** : familles sans visite depuis X temps
-- Notifications pour coordinateurs et admin
-- Suivi du traitement des alertes
+### 🔔 Alertes
+- **Alertes urgentes** : familles en situation critique
+- **Alertes « oubliées »** : familles sans visite depuis 30 jours
+- Planification de visites depuis les alertes
 
-### Missions terrain
-- **Planification de missions** : objectifs, zone, bénévoles, familles ciblées
-- Attribution familles ↔ missions
+### 📦 Gestion des stocks
+- Inventaire des articles (alimentaire, médical, vêtements, etc.)
+- Seuils d'alerte en cas de pénurie
+- Suivi des stocks et dons
+
+### 🎯 Missions terrain
+- Missions ouvertes et missions assignées
 - Suivi de l'avancement (visites réalisées / prévues)
-- Bilan de mission (optionnel pour rapports)
+- Check-in GPS pour validation de présence
 
-### Données éthiques et accès par rôle
-- **Contrôle d'accès (RBAC)** : bénévole, coordinateur, admin
-- Données sensibles limitées au besoin (principe du moindre accès)
-- Traçabilité des actions (qui a vu/modifié quoi, si pertinent)
-- Posture « humanitarian-first » sur la protection des données
+### 🔐 Contrôle d'accès (RBAC)
+- **Bénévole** : missions, visites, check-in
+- **Coordinateur** : familles, alertes, carte, stocks, missions
+- **Administrateur** : tout + gestion des utilisateurs
 
-### Tableau de bord et impact
-- **Dashboard** : indicateurs clés (familles suivies, visites, alertes, missions)
-- Synthèse par zone, par période, par bénévole
-- **Impact Story** par famille : récit automatique pour communication interne ou partenaires
-- Pas de module don/paiement : focus 100 % suivi terrain et impact
+### ♿ Accessibilité et personnalisation
+- Mode sombre / mode clair
+- Taille de police (Standard, Grand, Très Grand)
+- Épaisseur du texte (Normal, Moyen, Gras)
+- Interface multilingue (Français, Anglais, Arabe)
+- Support RTL pour l'arabe
+- Adaptabilité mobile (cartes, menu hamburger, safe area)
 
-## 🛠️ Stack technique
+---
+
+## 🛠️ Technologies utilisées
 
 ### Frontend
-- **React 18+** — Interface utilisateur
-- **Vite** — Build et dev rapide
-- **Tailwind CSS** — Styles et responsive
-- **Leaflet** — Cartes interactives et heatmap
-- **React Router** — Navigation
-- **Axios** — Appels API
+| Technologie | Rôle |
+|-------------|------|
+| **React 18** | Interface utilisateur |
+| **Vite** | Build et développement |
+| **Tailwind CSS v4** | Styles et responsive |
+| **React Router** | Navigation |
+| **Leaflet** | Cartes interactives et heatmap |
+| **Recharts** | Graphiques du dashboard |
+| **i18next** | Internationalisation (fr, en, ar) |
+| **jsPDF** | Génération de rapports PDF |
+| **Axios** | Appels API |
 
 ### Backend
-- **Node.js** — Runtime serveur
-- **Express.js** — API REST
-- **MongoDB** — Données (familles, visites, missions, alertes, utilisateurs)
-- **Mongoose** — Modèles et schémas
-- **JWT** — Authentification
-- **Bcrypt** — Mots de passe
+| Technologie | Rôle |
+|-------------|------|
+| **Node.js** | Runtime serveur |
+| **Express.js** | API REST |
+| **MongoDB** | Base de données |
+| **Mongoose** | Modèles et schémas |
+| **JWT** | Authentification |
+| **Bcrypt** | Mots de passe |
+| **CORS** | Cross-Origin |
 
 ### Outils
-- **ESLint** — Qualité du code
-- **Prettier** — Formatage
-- **Git** — Versioning
+- **ESLint** — Qualité du code  
+- **Prettier** — Formatage  
+- **Git** — Versioning  
+
+---
+
+## 🚀 Installation
+
+### Prérequis
+- **Node.js** v18 ou supérieur
+- **MongoDB** (local ou [MongoDB Atlas](https://www.mongodb.com/atlas))
+- **npm** ou **yarn**
+
+### 1. Cloner le dépôt
+```bash
+git clone <url-du-repository>
+cd omnia-charity-tracking
+```
+
+### 2. Installer les dépendances
+```bash
+# Backend
+cd backend
+npm install
+
+# Frontend
+cd ../frontend
+npm install
+```
+
+### 3. Configuration des variables d'environnement
+
+**Backend** — Copier `backend/.env.example` vers `backend/.env` :
+```
+PORT=5000
+NODE_ENV=development
+MONGODB_URI=mongodb://localhost:27017/omnia-charity
+JWT_SECRET=votre-cle-secrete-jwt-minimum-64-caracteres
+JWT_EXPIRE=7d
+FRONTEND_URL=http://localhost:5173
+```
+
+**Frontend** — Copier `frontend/.env.example` vers `frontend/.env` :
+```
+VITE_API_URL=http://localhost:5000/api
+VITE_APP_ENV=development
+```
+
+### 4. Créer un administrateur (optionnel)
+```bash
+cd backend
+npm run create-admin
+# Décommenter et remplir ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME dans .env
+```
+
+---
+
+## 📱 Utilisation
+
+### Démarrer l'application en développement
+
+**Terminal 1 — Backend :**
+```bash
+cd backend
+npm run dev
+```
+Le serveur API démarre sur `http://localhost:5000`
+
+**Terminal 2 — Frontend :**
+```bash
+cd frontend
+npm run dev
+```
+L'application est accessible sur `http://localhost:5173`
+
+### Build de production
+```bash
+# Frontend
+cd frontend
+npm run build
+
+# Le backend se lance avec :
+cd backend
+npm start
+```
+
+---
 
 ## 📁 Structure du projet
 
 ```
 omnia-charity-tracking/
-│
-├── frontend/                    # Application React + Vite
-│   ├── public/                  # Fichiers statiques
+├── backend/                 # API Node.js + Express
 │   ├── src/
-│   │   ├── assets/              # Images, icônes, polices
-│   │   ├── components/          # Composants réutilisables
-│   │   │   ├── common/          # Button, Input, etc.
-│   │   │   ├── layout/          # Header, Footer, Sidebar
-│   │   │   ├── maps/            # Cartes Leaflet, heatmap
-│   │   │   └── forms/           # Formulaires
-│   │   ├── pages/               # Pages de l'application
-│   │   │   ├── Dashboard/       # Tableau de bord
-│   │   │   ├── Families/        # Gestion des familles bénéficiaires
-│   │   │   ├── Visits/          # Visites terrain & aide
-│   │   │   ├── Missions/        # Planification missions terrain
-│   │   │   ├── Alerts/          # Alertes urgentes / oubliées
-│   │   │   ├── Map/             # Carte interactive & heatmap
-│   │   │   └── Reports/         # Impact, récits, synthèses
-│   │   ├── hooks/               # Custom React hooks
-│   │   ├── services/            # Appels API
-│   │   ├── store/               # État global
-│   │   ├── utils/               # Utilitaires
-│   │   ├── styles/              # Styles globaux, Tailwind
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── .env.example
-│   ├── index.html
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── tailwind.config.js
-│   └── postcss.config.js
-│
-├── backend/                     # API Node.js + Express
-│   ├── src/
-│   │   ├── config/              # DB, JWT, etc.
-│   │   ├── controllers/
-│   │   │   ├── auth.controller.js
-│   │   │   ├── family.controller.js
-│   │   │   ├── visit.controller.js
-│   │   │   ├── mission.controller.js
-│   │   │   ├── alert.controller.js
-│   │   │   └── report.controller.js
-│   │   ├── models/
-│   │   │   ├── User.model.js
-│   │   │   ├── Family.model.js
-│   │   │   ├── Visit.model.js
-│   │   │   ├── Mission.model.js
-│   │   │   └── Alert.model.js
-│   │   ├── routes/
-│   │   │   ├── auth.routes.js
-│   │   │   ├── family.routes.js
-│   │   │   ├── visit.routes.js
-│   │   │   ├── mission.routes.js
-│   │   │   ├── alert.routes.js
-│   │   │   └── report.routes.js
-│   │   ├── middleware/
-│   │   │   ├── auth.middleware.js
-│   │   │   ├── rbac.middleware.js
-│   │   │   ├── validation.middleware.js
-│   │   │   └── error.middleware.js
-│   │   ├── utils/
+│   │   ├── config/          # Configuration (DB)
+│   │   ├── controllers/     # Logique métier
+│   │   ├── middleware/      # Auth, RBAC, erreurs
+│   │   ├── models/          # User, Family, Visit, Item
+│   │   ├── routes/          # Routes API
 │   │   ├── app.js
 │   │   └── server.js
-│   ├── .env.example
-│   ├── package.json
-│   └── .gitignore
+│   └── scripts/
+│       └── create-admin.js
 │
-├── docs/
-│   ├── api/                     # Documentation API
-│   └── architecture/            # Architecture & décisions
+├── frontend/                # Application React + Vite
+│   ├── src/
+│   │   ├── components/      # AppNavbar, Sidebar, modales, cartes
+│   │   ├── context/         # Auth, Theme, FontSize, FontWeight
+│   │   ├── hooks/           # useLanguageDirection
+│   │   ├── locales/         # fr.json, en.json, ar.json
+│   │   ├── pages/           # Dashboard, Alerts, Map, etc.
+│   │   ├── services/        # Appels API
+│   │   └── utils/           # geo, imageCompression, etc.
+│   ├── index.html
+│   ├── vite.config.js
+│   └── tailwind.config.js
 │
-├── .gitignore
+├── tests/
+│   └── api.http
 └── README.md
 ```
 
-## 🚀 Installation et démarrage
+---
 
-### Prérequis
-- Node.js (v18+)
-- MongoDB (local ou Atlas)
-- npm ou yarn
+## 🌐 Hébergement recommandé
 
-### Installation
+| Service | Usage |
+|---------|-------|
+| **Vercel** | Frontend |
+| **Render** | Backend API |
+| **MongoDB Atlas** | Base de données |
 
-```bash
-git clone <repository-url>
-cd omnia-charity-tracking
-
-cd frontend && npm install
-cd ../backend && npm install
-```
-
-### Configuration
-
-- **Backend** : copier `backend/.env.example` → `backend/.env`  
-  - `PORT`, `MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRE`, `FRONTEND_URL`
-- **Frontend** : copier `frontend/.env.example` → `frontend/.env`  
-  - `VITE_API_URL`
-
-### Démarrage
-
-```bash
-# Backend (dans backend/)
-npm run dev
-
-# Frontend (dans frontend/)
-npm run dev
-```
-
-## 📝 Conventions
-
-- **Nommage** : camelCase (variables/fonctions), PascalCase (composants)
-- **Structure** : un composant par fichier, organisation par fonctionnalité
-- **Formatage** : Prettier
-- **Commentaires** : pour la logique métier non évidente
-
-## 🤝 Contribution
-
-Projet hackathon pour l'Association Omnia. Contributions bienvenues dans le respect du périmètre (suivi terrain et impact, pas de gestion des dons/paiements).
+---
 
 ## 📄 Licence
 
 [À définir]
 
-## 👨‍💻 Équipe
+---
 
-[À compléter]
+## 🤝 Contribution
+
+Projet réalisé dans le cadre du hackathon **#MaraTechEsprit2026**. Contributions bienvenues dans le respect du périmètre (suivi terrain et impact humanitaire).
 
 ---
 
-*Projet en développement. Documentation mise à jour au fil de l'avancement.*
+<p align="center">
+  <strong>#MaraTechEsprit2026</strong>
+</p>
