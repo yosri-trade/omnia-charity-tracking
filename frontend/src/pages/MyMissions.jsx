@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getMyVisits } from '../services/visit.service.js';
-import Sidebar from '../components/Sidebar.jsx';
+import AppNavbar from '../components/AppNavbar.jsx';
+
+const ASSIGNED_DISPLAY_LIMIT = 3;
 
 function formatDate(d) {
   const date = new Date(d);
@@ -47,8 +50,8 @@ function CheckCircleIcon({ className }) {
 }
 
 function MyMissions() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { t } = useTranslation();
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -68,6 +71,8 @@ function MyMissions() {
     return () => { cancelled = true; };
   }, []);
 
+  const [showAllAssigned, setShowAllAssigned] = useState(false);
+
   const planned = visits.filter((v) => v.status === 'PLANNED');
   const completed = visits.filter((v) => v.status === 'COMPLETED' || !v.status);
 
@@ -79,27 +84,57 @@ function MyMissions() {
   };
   const isOpenMission = (v) => !v.assignedTo?.length;
 
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-slate-800">Mes Missions</h1>
-            <Sidebar role={user?.role} />
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">{user?.name}</span>
-            <button
-              type="button"
-              onClick={() => { logout(); navigate('/login', { replace: true }); }}
-              className="px-3 py-1.5 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
-            >
-              Déconnexion
-            </button>
-          </div>
-        </div>
-      </header>
+  const openMissions = useMemo(
+    () => planned.filter((v) => isOpenMission(v)),
+    [planned]
+  );
+  const assignedMissionsSorted = useMemo(
+    () =>
+      [...planned.filter((v) => isAssignedToMe(v))].sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      ),
+    [planned]
+  );
+  const assignedDisplayed = showAllAssigned
+    ? assignedMissionsSorted
+    : assignedMissionsSorted.slice(0, ASSIGNED_DISPLAY_LIMIT);
+  const hasMoreAssigned = assignedMissionsSorted.length > ASSIGNED_DISPLAY_LIMIT;
 
+  const MissionCard = ({ v }) => (
+    <div
+      key={v._id}
+      className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-5 shadow-sm"
+    >
+      <div className="flex flex-wrap items-center gap-2 mb-1">
+        <p className="font-medium text-slate-800 dark:text-slate-100">
+          {t('missions.visitPlanned')} — {v.family?.name || t('missions.family')}
+        </p>
+        {isAssignedToMe(v) ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200">
+            {t('missions.missionAssigned')}
+          </span>
+        ) : isOpenMission(v) ? (
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200">
+            {t('missions.missionOpen')}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+        {formatDate(v.date)}
+        {v.family?.address && ` · ${v.family.address}`}
+      </p>
+      <Link
+        to={`/visits/${v._id}/checkin`}
+        className="mt-4 inline-flex items-center justify-center min-h-[44px] w-full sm:w-auto px-6 py-3 text-base font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+      >
+        {t('missions.startMission')}
+      </Link>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <AppNavbar />
       <main className="max-w-4xl mx-auto px-4 py-8">
         {loading && (
           <div className="flex justify-center py-12">
@@ -108,55 +143,69 @@ function MyMissions() {
         )}
 
         {error && (
-          <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="p-4 mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
             {error}
           </div>
         )}
 
         {!loading && !error && (
           <>
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">Visites à réaliser</h2>
-            {planned.length === 0 ? (
-              <p className="text-slate-500 text-sm mb-8">Aucune visite planifiée.</p>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2">
+              <span aria-hidden>🟢</span> {t('missions.open')}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              {t('missions.openDesc')}
+            </p>
+            {openMissions.length === 0 ? (
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-600 px-4 py-3">
+                {t('missions.noOpen')}
+              </p>
             ) : (
               <div className="grid gap-4 mb-10">
-                {planned.map((v) => (
-                  <div
-                    key={v._id}
-                    className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm"
-                  >
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <p className="font-medium text-slate-800">
-                        Visite prévue — {v.family?.name || 'Famille'}
-                      </p>
-                      {isAssignedToMe(v) ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                          Mission Assignée
-                        </span>
-                      ) : isOpenMission(v) ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                          Mission Ouverte
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className="text-sm text-slate-500 mt-1">
-                      {formatDate(v.date)}
-                      {v.family?.address && ` · ${v.family.address}`}
-                    </p>
-                    <Link
-                      to={`/visits/${v._id}/checkin`}
-                      className="mt-4 inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-base font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
-                    >
-                      Démarrer Mission
-                    </Link>
-                  </div>
+                {openMissions.map((v) => (
+                  <MissionCard key={v._id} v={v} />
                 ))}
               </div>
             )}
 
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">Visites réalisées</h2>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-3 flex items-center gap-2 mt-2">
+              <span aria-hidden>🔵</span> {t('missions.assigned')}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              {t('missions.assignedDesc')}
+            </p>
+            {assignedMissionsSorted.length === 0 ? (
+              <p className="text-slate-600 dark:text-slate-400 text-sm mb-8 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-600 px-4 py-3">
+                {t('missions.noAssigned')}
+              </p>
+            ) : (
+              <>
+                <div className="grid gap-4 mb-4">
+                  {assignedDisplayed.map((v) => (
+                    <MissionCard key={v._id} v={v} />
+                  ))}
+                </div>
+                {hasMoreAssigned && (
+                  <div className="mb-8">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllAssigned((prev) => !prev)}
+                      className="min-h-[44px] min-w-[44px] inline-flex items-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 rounded px-2 py-2"
+                      aria-expanded={showAllAssigned}
+                      aria-label={showAllAssigned ? t('missions.reduce') : t('missions.seeAll')}
+                    >
+                      {showAllAssigned
+                        ? t('missions.reduce')
+                        : `${t('missions.seeAll')} (${assignedMissionsSorted.length})`}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4 mt-10">{t('missions.completed')}</h2>
             {completed.length === 0 ? (
-              <p className="text-slate-500 text-sm">Aucune visite réalisée.</p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">{t('missions.noCompleted')}</p>
             ) : (
               <div className="space-y-3">
                 {completed.slice(0, 10).map((v) => {
@@ -166,26 +215,26 @@ function MyMissions() {
                   return (
                     <div
                       key={v._id}
-                      className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-100 shadow-sm"
+                      className="flex items-center gap-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm"
                     >
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center text-green-600 dark:text-green-400">
                         <CheckCircleIcon className="w-6 h-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-slate-800 truncate">
-                          {v.family?.name || 'Famille'}
+                        <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">
+                          {v.family?.name || t('missions.family')}
                         </p>
-                        <p className="text-sm text-gray-500 truncate" title={address}>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate" title={address}>
                           {shortAddress || '—'}
                         </p>
                       </div>
                       <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
                         <div className="flex flex-wrap gap-1 justify-end">
-                          {types.slice(0, 3).map((t) => {
-                            const style = TYPE_STYLES[t] || TYPE_STYLES.Autre;
+                          {types.slice(0, 3).map((typeKey) => {
+                            const style = TYPE_STYLES[typeKey] || TYPE_STYLES.Autre;
                             return (
                               <span
-                                key={t}
+                                key={typeKey}
                                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${style.bg} ${style.text}`}
                               >
                                 {style.emoji} {style.label}
@@ -193,7 +242,7 @@ function MyMissions() {
                             );
                           })}
                         </div>
-                        <span className="text-xs text-gray-400">
+                        <span className="text-xs text-slate-400 dark:text-slate-500">
                           {formatRelativeDate(v.date)}
                         </span>
                       </div>

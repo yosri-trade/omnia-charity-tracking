@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+/* Tailwind v4 : variante dark basée sur la classe .dark sur un ancêtre (html) */
+@custom-variant dark (&&:where(.dark, .dark *));
+
+/* Mode sombre : fond par défaut */
+.dark {
+  color-scheme: dark;
+}
+
+/* Accessibilité WCAG 2.1 AA : focus visible pour la navigation clavier */
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Personnalisation taille de police (accessibilité) */
+.font-size-standard {
+  font-size: 100%;
+}
+.font-size-large {
+  font-size: 112.5%;
+}
+.font-size-xl {
+  font-size: 125%;
+}
+
+/* Safe area (encoches iPhone X+, barres système) */
+.safe-area-body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-area-header {
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  padding-top: max(0.75rem, env(safe-area-inset-top));
+}
+.safe-area-modal {
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}

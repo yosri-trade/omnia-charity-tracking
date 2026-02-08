@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { getStats } from '../../services/stats.service.js';
 import { deleteFamily } from '../../services/family.service.js';
 import AddFamilyModal from '../../components/families/AddFamilyModal.jsx';
 import DashboardCharts from '../../components/dashboard/DashboardCharts.jsx';
-import Sidebar from '../../components/Sidebar.jsx';
+import AppNavbar from '../../components/AppNavbar.jsx';
 
 const IconUsers = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,7 +44,7 @@ function StatusBadge({ status }) {
   return (
     <span
       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-        isUrgent ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+        isUrgent ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200' : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
       }`}
     >
       {status}
@@ -52,8 +53,8 @@ function StatusBadge({ status }) {
 }
 
 function Dashboard() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { t } = useTranslation();
+  useAuth();
   const [families, setFamilies] = useState([]);
   const [visits, setVisits] = useState([]);
   const [visitsCount, setVisitsCount] = useState(0);
@@ -84,7 +85,7 @@ function Dashboard() {
       setVisits(visitsList);
       setVisitsCount(data.visitsCount ?? visitsList.filter((v) => v.status === 'COMPLETED' || !v.status).length);
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Erreur lors du chargement.');
+      setError(err.response?.data?.error || err.message || t('dashboard.loadError'));
     } finally {
       setLoading(false);
     }
@@ -95,13 +96,13 @@ function Dashboard() {
   }, [loadData]);
 
   const handleDeleteFamily = async (family) => {
-    if (!window.confirm(`Supprimer la famille « ${family.name} » ?`)) return;
+    if (!window.confirm(t('dashboard.deleteFamilyConfirm', { name: family.name }))) return;
     try {
       await deleteFamily(family._id);
       setLoading(true);
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.error || err.message || 'Erreur lors de la suppression.');
+      setError(err.response?.data?.error || err.message || t('dashboard.deleteError'));
     }
   };
 
@@ -120,42 +121,19 @@ function Dashboard() {
     setFamilyToEdit(null);
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login', { replace: true });
-  };
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="text-xl font-semibold text-slate-800">
-                Bienvenue {user?.name || 'Utilisateur'}
-              </h1>
-              <p className="text-sm text-slate-500">OMNIA Charity Tracking</p>
-            </div>
-            <Sidebar role={user?.role} />
-          </div>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
-          >
-            Déconnexion
-          </button>
-        </div>
-      </header>
-
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      <AppNavbar />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <h2 className="text-lg font-semibold text-slate-800">Familles bénéficiaires</h2>
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{t('dashboard.title')}</h2>
           <div className="flex flex-wrap gap-2">
             <Link
               to="/alerts"
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shrink-0"
+              className="inline-flex items-center justify-center min-h-[44px] gap-1.5 px-4 py-3 text-sm font-medium text-white bg-red-600 dark:bg-red-500 rounded-lg hover:bg-red-700 dark:hover:bg-red-600 shrink-0 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              aria-label={urgentFamilies > 0 ? (urgentFamilies > 1 ? t('dashboard.alertsUrgents', { count: urgentFamilies }) : t('dashboard.alertsUrgent', { count: urgentFamilies })) : t('dashboard.alerts')}
             >
-              🔔 Alertes
+              <span aria-hidden>🔔</span> {t('dashboard.alerts')}
               {urgentFamilies > 0 && (
                 <span className="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-white/25 text-xs font-bold">
                   {urgentFamilies}
@@ -164,21 +142,25 @@ function Dashboard() {
             </Link>
             <Link
               to="/map"
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shrink-0"
+              className="inline-flex items-center justify-center min-h-[44px] px-4 py-3 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-500 rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 shrink-0 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              aria-label={t('dashboard.viewMap')}
             >
-              🌍 Voir la Carte
+              <span aria-hidden>🌍</span> {t('dashboard.viewMap')}
             </Link>
             <Link
               to="/inventory"
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-slate-600 rounded-lg hover:bg-slate-700 shrink-0"
+              className="inline-flex items-center justify-center min-h-[44px] px-4 py-3 text-sm font-medium text-white bg-slate-600 dark:bg-slate-500 rounded-lg hover:bg-slate-700 dark:hover:bg-slate-600 shrink-0 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              aria-label={t('dashboard.stocks')}
             >
-              📦 Stocks
+              <span aria-hidden>📦</span> {t('dashboard.stocks')}
             </Link>
             <button
+              type="button"
               onClick={handleOpenAdd}
-              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shrink-0"
+              className="inline-flex items-center justify-center min-h-[44px] px-4 py-3 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 shrink-0 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+              aria-label={t('dashboard.addFamily')}
             >
-              Ajouter une famille
+              {t('dashboard.addFamily')}
             </button>
           </div>
         </div>
@@ -195,31 +177,31 @@ function Dashboard() {
 
         {!loading && !error && families.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <IconUsers />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Total Familles</p>
-                <p className="text-2xl font-semibold text-slate-800">{totalFamilies}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.totalFamilies')}</p>
+                <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{totalFamilies}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center text-red-600">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-red-100 dark:bg-red-900/40 flex items-center justify-center text-red-600 dark:text-red-400">
                 <IconAlert />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Familles Urgentes</p>
-                <p className="text-2xl font-semibold text-slate-800">{urgentFamilies}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.urgentFamilies')}</p>
+                <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{urgentFamilies}</p>
               </div>
             </div>
-            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-600 p-4 flex items-center gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400">
                 <IconVisits />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Visites Réalisées</p>
-                <p className="text-2xl font-semibold text-slate-800">{visitsCount}</p>
+                <p className="text-sm text-slate-600 dark:text-slate-400">{t('dashboard.visitsCompleted')}</p>
+                <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100">{visitsCount}</p>
               </div>
             </div>
           </div>
@@ -239,8 +221,9 @@ function Dashboard() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher une famille..."
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                placeholder={t('dashboard.searchFamily')}
+                className="w-full min-h-[44px] pl-10 pr-4 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-900 text-sm"
+                aria-label={t('dashboard.searchFamilyLabel')}
               />
             </div>
           </div>
@@ -253,80 +236,127 @@ function Dashboard() {
         )}
 
         {error && (
-          <div className="p-4 mb-6 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="p-4 mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
             {error}
           </div>
         )}
 
         {!loading && !error && families.length === 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center text-slate-500">
-            Aucune famille enregistrée
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-12 text-center text-slate-600 dark:text-slate-400">
+            {t('dashboard.noFamilies')}
           </div>
         )}
 
         {!loading && !error && families.length > 0 && (
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <>
+            {/* Vue cartes mobile (< 768px) */}
+            <div className="block md:hidden space-y-3">
+              {filteredFamilies.length === 0 ? (
+                <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-8 text-center text-slate-600 dark:text-slate-400 text-sm">
+                  {t('dashboard.noFamilyMatch')}
+                </div>
+              ) : (
+                filteredFamilies.map((family) => (
+                  <div
+                    key={family._id}
+                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <Link
+                        to={`/families/${family._id}`}
+                        className="text-base font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 rounded min-h-[44px] inline-flex items-center"
+                      >
+                        {family.name}
+                      </Link>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(family)}
+                          className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg focus-visible:ring-2 focus-visible:ring-blue-600"
+                          title={t('dashboard.edit')}
+                          aria-label={t('dashboard.edit')}
+                        >
+                          <IconPencil />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFamily(family)}
+                          className="p-2 min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg focus-visible:ring-2 focus-visible:ring-red-600"
+                          title={t('dashboard.delete')}
+                          aria-label={t('dashboard.delete')}
+                        >
+                          <IconTrash />
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">{family.address || t('dashboard.dash')}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={family.status} />
+                      {family.needs?.length > 0 && (
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                          {family.needs.join(', ')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            {/* Vue tableau tablette+ (≥ 768px) */}
+            <div className="hidden md:block bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-600 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
+              <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-600">
                 <thead>
-                  <tr className="bg-slate-50">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Nom
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Adresse
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Statut
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Besoins
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-600 uppercase tracking-wider">
-                      Actions
-                    </th>
+                  <tr className="bg-slate-50 dark:bg-slate-700/50">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">{t('dashboard.tableName')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">{t('dashboard.tableAddress')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">{t('dashboard.tableStatus')}</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">{t('dashboard.tableNeeds')}</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wider">{t('dashboard.tableActions')}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-slate-200 dark:divide-slate-600">
                   {filteredFamilies.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500 text-sm">
-                        Aucune famille ne correspond à la recherche.
+                      <td colSpan={5} className="px-4 py-8 text-center text-slate-600 dark:text-slate-400 text-sm">
+                        {t('dashboard.noFamilyMatch')}
                       </td>
                     </tr>
                   ) : (
                     filteredFamilies.map((family) => (
-                      <tr key={family._id} className="hover:bg-slate-50">
+                      <tr key={family._id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
                         <td className="px-4 py-3">
                           <Link
                             to={`/families/${family._id}`}
-                            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                            className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 rounded min-h-[44px] inline-flex items-center"
                           >
                             {family.name}
                           </Link>
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">{family.address || '—'}</td>
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">{family.address || t('dashboard.dash')}</td>
                         <td className="px-4 py-3">
                           <StatusBadge status={family.status} />
                         </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {family.needs?.length > 0 ? family.needs.join(', ') : '—'}
+                        <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                          {family.needs?.length > 0 ? family.needs.join(', ') : t('dashboard.dash')}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             <button
                               type="button"
                               onClick={() => handleOpenEdit(family)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                              title="Modifier"
+                              className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg focus-visible:ring-2 focus-visible:ring-blue-600"
+                              title={t('dashboard.edit')}
+                              aria-label={t('dashboard.edit')}
                             >
                               <IconPencil />
                             </button>
                             <button
                               type="button"
                               onClick={() => handleDeleteFamily(family)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                              title="Supprimer"
+                              className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg focus-visible:ring-2 focus-visible:ring-red-600"
+                              title={t('dashboard.delete')}
+                              aria-label={t('dashboard.delete')}
                             >
                               <IconTrash />
                             </button>
@@ -338,7 +368,8 @@ function Dashboard() {
                 </tbody>
               </table>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </main>
     </div>

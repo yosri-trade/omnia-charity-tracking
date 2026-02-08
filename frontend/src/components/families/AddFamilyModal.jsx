@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import { createFamily, updateFamily } from '../../services/family.service.js';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
@@ -45,14 +46,15 @@ function MapInvalidateSize() {
 }
 
 const NEEDS_OPTIONS = [
-  { id: 'Alimentaire', label: 'Alimentaire' },
-  { id: 'Médical', label: 'Médical' },
-  { id: 'Vêtements', label: 'Vêtements' },
+  { id: 'Alimentaire', labelKey: 'types.alimentaire' },
+  { id: 'Médical', labelKey: 'types.medical' },
+  { id: 'Vêtements', labelKey: 'types.vetements' },
 ];
 
 const emptyClothingRow = () => ({ type: 'Adulte', gender: 'M', age: '', size: '' });
 
 function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -179,7 +181,7 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
     e.preventDefault();
     setError('');
     if (!name.trim()) {
-      setError('Le nom est requis.');
+      setError(t('family.nameRequired'));
       return;
     }
     setSubmitting(true);
@@ -221,7 +223,7 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
       onSuccess?.();
       handleClose();
     } catch (err) {
-      setError(err.response?.data?.error || err.message || "Erreur lors de l'enregistrement.");
+      setError(err.response?.data?.error || err.message || t('family.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -248,32 +250,35 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center safe-area-modal">
       <div
         className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
         onClick={handleClose}
         aria-hidden="true"
       />
       <div
-        className="relative w-full max-w-md bg-white rounded-xl shadow-xl max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-md max-h-[90vh] flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-600 overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
       >
-        <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4">
-          <h2 id="modal-title" className="text-lg font-semibold text-slate-800">
-            {isEdit ? 'Modifier la famille' : 'Ajouter une famille'}
+        {/* Header fixe */}
+        <div className="shrink-0 border-b border-slate-200 dark:border-slate-600 px-6 py-4 bg-white dark:bg-slate-800 rounded-t-xl z-10">
+          <h2 id="modal-title" className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            {isEdit ? t('family.editFamily') : t('family.addFamily')}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 flex overflow-hidden">
+          {/* Body scrollable */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0 overscroll-contain [&_input]:scroll-mt-2 [&_input]:scroll-mb-2 [&_select]:scroll-mt-2 [&_select]:scroll-mb-2 [&_textarea]:scroll-mt-2 [&_textarea]:scroll-mb-2 [&_button]:scroll-mt-2 [&_button]:scroll-mb-2">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
               {error}
             </div>
           )}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
-              Nom <span className="text-red-500">*</span>
+            <label htmlFor="name" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('family.name')} <span className="text-red-500">*</span>
             </label>
             <input
               id="name"
@@ -281,13 +286,13 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Nom de la famille"
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-800"
+              placeholder={t('family.namePlaceholder')}
             />
           </div>
           <div>
-            <label htmlFor="address" className="block text-sm font-medium text-slate-700 mb-1">
-              Adresse
+            <label htmlFor="address" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('family.address')}
             </label>
             <input
               id="address"
@@ -295,43 +300,43 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
               value={address}
               onChange={handleAddressChange}
               disabled={addressLoading}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:cursor-wait"
-              placeholder={addressLoading ? 'Recherche de l\'adresse...' : 'Adresse complète'}
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-800 disabled:bg-slate-50 dark:disabled:bg-slate-600 disabled:cursor-wait"
+              placeholder={addressLoading ? t('family.addressSearch') : t('family.addressPlaceholder')}
             />
             {addressFromGeocode && !addressLoading && (
-              <p className="mt-1 text-xs text-green-600">📍 Adresse trouvée !</p>
+              <p className="mt-1 text-xs text-green-600 dark:text-green-400">📍 {t('family.addressFound')}</p>
             )}
           </div>
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-slate-700 mb-1">
-              Téléphone
+            <label htmlFor="phone" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('family.phone')}
             </label>
             <input
               id="phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-800"
               placeholder="+216 12 345 678"
             />
           </div>
           <div>
-            <label htmlFor="status" className="block text-sm font-medium text-slate-700 mb-1">
-              Statut
+            <label htmlFor="status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('family.status')}
             </label>
             <select
               id="status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-800"
             >
               <option value="ACTIVE">ACTIVE</option>
               <option value="URGENT">URGENT</option>
             </select>
           </div>
           <div>
-            <label htmlFor="membersCount" className="block text-sm font-medium text-slate-700 mb-1">
-              Nombre de membres
+            <label htmlFor="membersCount" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('family.membersCount')}
             </label>
             <input
               id="membersCount"
@@ -339,28 +344,28 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
               min={1}
               value={membersCount}
               onChange={(e) => setMembersCount(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-800"
             />
           </div>
           <div>
-            <label htmlFor="familyHistory" className="block text-sm font-medium text-slate-700 mb-1">
-              Histoire / Contexte de la famille
+            <label htmlFor="familyHistory" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('family.history')}
             </label>
             <textarea
               id="familyHistory"
               value={familyHistory}
               onChange={(e) => setFamilyHistory(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full min-h-[88px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 dark:focus-visible:ring-offset-slate-800 resize-none"
               placeholder="Ex: Père accidenté, logement insalubre..."
             />
           </div>
-          <div>
-            <span className="block text-sm font-medium text-slate-700 mb-2">
-              Localisation GPS
+          <div role="group" aria-labelledby="family-gps-label">
+            <span id="family-gps-label" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              {t('family.gps')}
             </span>
             <div
-              className="rounded-lg overflow-hidden border border-slate-300"
+              className="rounded-lg overflow-hidden border border-slate-300 dark:border-slate-500"
               style={{ height: 250 }}
             >
               <MapContainer
@@ -381,22 +386,22 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
                 )}
               </MapContainer>
             </div>
-            <p className="mt-1 text-xs text-slate-500">
+            <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
               {coordinates.lat != null && coordinates.lng != null
-                ? `Coordonnées sélectionnées : ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
-                : 'Aucune'}
+                ? `${t('family.gpsHint')} : ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)}`
+                : t('family.none')}
             </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Cliquez sur la carte pour placer le marqueur.
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+              {t('family.gpsClickHint')}
             </p>
           </div>
           <div>
-            <span className="block text-sm font-medium text-slate-700 mb-2">Besoins</span>
+            <span className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('family.needs')}</span>
             <div className="space-y-2">
               {NEEDS_OPTIONS.map((opt) => (
                 <label
                   key={opt.id}
-                  className="flex items-center gap-2 cursor-pointer text-sm text-slate-700"
+                  className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300"
                 >
                   <input
                     type="checkbox"
@@ -404,15 +409,15 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
                     onChange={() => toggleNeed(opt.id)}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </label>
               ))}
             </div>
 
             {hasMedical && (
-              <div className="mt-4 p-4 rounded-lg border border-slate-200 bg-slate-50/50">
-                <label className="block text-sm font-medium text-slate-700 mb-2">
-                  Nom du médicament ou traitement
+              <div className="mt-4 p-4 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-700/50">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  {t('family.medicationLabel')}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -420,13 +425,13 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
                     value={medicationInput}
                     onChange={(e) => setMedicationInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addMedication())}
-                    className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    placeholder="Ex: Paracétamol, Insuline (séparez par des virgules)"
+                    className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+                    placeholder={t('family.medicationPlaceholder')}
                   />
                   <button
                     type="button"
                     onClick={addMedication}
-                    className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+                    className="px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/60"
                   >
                     +
                   </button>
@@ -436,14 +441,14 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
                     {medications.map((med, i) => (
                       <li
                         key={i}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white border border-slate-200 text-sm"
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-sm text-slate-800 dark:text-slate-200"
                       >
                         {med}
                         <button
                           type="button"
                           onClick={() => removeMedication(i)}
-                          className="text-red-600 hover:text-red-800"
-                          aria-label="Supprimer"
+                          className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                          aria-label={t('dashboard.delete')}
                         >
                           ×
                         </button>
@@ -455,59 +460,59 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
             )}
 
             {hasClothing && (
-              <div className="mt-4 p-4 rounded-lg border border-slate-200 bg-slate-50/50">
+              <div className="mt-4 p-4 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-700/50">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-slate-700">Détails vêtements</span>
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{t('family.clothingDetails')}</span>
                   <button
                     type="button"
                     onClick={addClothingRow}
-                    className="inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100"
+                    className="inline-flex items-center gap-1 px-2 py-1.5 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/60"
                   >
-                    ➕ Ajouter un membre
+                    ➕ {t('family.addMember')}
                   </button>
                 </div>
                 <div className="space-y-2">
                   {clothing.map((row, index) => (
                     <div
                       key={index}
-                      className="flex flex-wrap items-center gap-2 p-2 rounded border border-slate-200 bg-white"
+                      className="flex flex-wrap items-center gap-2 p-2 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700"
                     >
                       <select
                         value={row.type}
                         onChange={(e) => updateClothingRow(index, 'type', e.target.value)}
-                        className="px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-500 dark:bg-slate-600 dark:text-slate-100 rounded focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="Enfant">Enfant</option>
-                        <option value="Adulte">Adulte</option>
+                        <option value="Enfant">{t('family.child')}</option>
+                        <option value="Adulte">{t('family.adult')}</option>
                       </select>
                       <select
                         value={row.gender}
                         onChange={(e) => updateClothingRow(index, 'gender', e.target.value)}
-                        className="px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-500 dark:bg-slate-600 dark:text-slate-100 rounded focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="M">Homme</option>
-                        <option value="F">Femme</option>
+                        <option value="M">{t('family.man')}</option>
+                        <option value="F">{t('family.woman')}</option>
                       </select>
                       <input
                         type="number"
                         min={0}
-                        placeholder="Âge"
+                        placeholder={t('family.age')}
                         value={row.age}
                         onChange={(e) => updateClothingRow(index, 'age', e.target.value)}
-                        className="w-16 px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-16 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-500 dark:bg-slate-600 dark:text-slate-100 rounded focus:ring-2 focus:ring-blue-500"
                       />
                       <input
                         type="text"
-                        placeholder="Taille (opt.)"
+                        placeholder={t('family.sizeOptional')}
                         value={row.size}
                         onChange={(e) => updateClothingRow(index, 'size', e.target.value)}
-                        className="w-20 px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-2 focus:ring-blue-500"
+                        className="w-20 px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-500 dark:bg-slate-600 dark:text-slate-100 rounded focus:ring-2 focus:ring-blue-500"
                       />
                       <button
                         type="button"
                         onClick={() => removeClothingRow(index)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded"
-                        aria-label="Supprimer"
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                        aria-label={t('dashboard.delete')}
                       >
                         ×
                       </button>
@@ -517,21 +522,25 @@ function AddFamilyModal({ isOpen, onClose, onSuccess, initialData }) {
               </div>
             )}
           </div>
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? (isEdit ? 'Mise à jour...' : 'Enregistrement...') : (isEdit ? 'Mettre à jour' : 'Enregistrer')}
-            </button>
+          </div>
+          {/* Footer sticky */}
+          <div className="shrink-0 border-t border-slate-200 dark:border-slate-600 px-6 py-4 bg-white dark:bg-slate-800 rounded-b-xl">
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="flex-1 min-h-[44px] px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
+              >
+                {t('family.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 min-h-[44px] px-4 py-3 text-sm font-medium text-white bg-blue-600 dark:bg-blue-500 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
+              >
+                {submitting ? (isEdit ? t('family.updating') : t('family.saving')) : (isEdit ? t('family.update') : t('family.save'))}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.jsx';
 import { validateVisit, getVisitById } from '../services/visit.service.js';
 import { calculateDistance } from '../utils/geo.js';
 import { compressImageForUpload } from '../utils/imageCompression.js';
+import AppNavbar from '../components/AppNavbar.jsx';
 
 const ALLOWED_RADIUS_METERS = 100;
 const STEP = {
@@ -16,6 +18,7 @@ const STEP = {
 };
 
 function VisitCheckin() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -29,24 +32,21 @@ function VisitCheckin() {
 
   const loadVisit = useCallback(async () => {
     if (!id) {
-      setError('Identifiant de visite manquant.');
+      setError(t('checkin.missingId'));
       setStep(STEP.ERROR);
       return;
     }
-    console.log('[VisitCheckin] Chargement de la visite…', id);
     setStep(STEP.LOADING_VISIT);
     setError(null);
     try {
       const res = await getVisitById(id);
       setVisit(res.data);
-      console.log('[VisitCheckin] Visite chargée.', res.data?.family?.name);
     } catch (err) {
-      const msg = err.response?.data?.error || err.message || 'Impossible de charger la visite.';
-      console.error('[VisitCheckin] Erreur chargement visite:', err);
+      const msg = err.response?.data?.error || err.message || t('checkin.loadError');
       setError(msg);
       setStep(STEP.ERROR);
     }
-  }, [id]);
+  }, [id, t]);
 
   useEffect(() => {
     loadVisit();
@@ -56,14 +56,11 @@ function VisitCheckin() {
     if (step !== STEP.LOADING_VISIT || !visit) return;
 
     if (!navigator.geolocation) {
-      console.error('[VisitCheckin] GPS non supporté.');
-      alert('GPS non supporté sur cet appareil.');
-      setError('La géolocalisation n\'est pas supportée par ce navigateur.');
+      setError(t('checkin.geoNotSupported'));
       setStep(STEP.ERROR);
       return;
     }
 
-    console.log('[VisitCheckin] Démarrage GPS…');
     setStep(STEP.GETTING_POSITION);
     setError(null);
 
@@ -92,20 +89,18 @@ function VisitCheckin() {
         setStep(STEP.POSITION_FOUND);
       },
       (err) => {
-        console.error('[VisitCheckin] Erreur géolocalisation:', err);
         const msg =
           err.code === 1
-            ? 'Veuillez autoriser la géolocalisation dans le navigateur.'
+            ? t('checkin.allowGeo')
             : err.code === 2
-              ? 'Position indisponible.'
-              : 'Délai dépassé pour obtenir la position.';
-        alert(`Erreur : ${msg}`);
+              ? t('checkin.positionUnavailable')
+              : t('checkin.positionTimeout');
         setError(msg);
         setStep(STEP.ERROR);
       },
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
     );
-  }, [step, visit]);
+  }, [step, visit, t]);
 
   const handleProofPhotoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -115,7 +110,7 @@ function VisitCheckin() {
       setProofPhoto(compressed);
       setProofPhotoFile(file.name);
     } catch (err) {
-      setError(err.message || 'Impossible de traiter la photo.');
+      setError(err.message || t('checkin.photoError'));
     }
   };
 
@@ -136,8 +131,7 @@ function VisitCheckin() {
       setTimeout(() => navigate('/my-missions', { replace: true }), 2500);
     } catch (err) {
       const serverMsg = err.response?.data?.error;
-      const msg = serverMsg || err.message || 'Échec de la validation.';
-      console.error('[VisitCheckin] Erreur API validate:', err.response?.data || err);
+      const msg = serverMsg || err.message || t('checkin.validateError');
       setError(msg);
       setStep(STEP.POSITION_FOUND);
     }
@@ -152,98 +146,100 @@ function VisitCheckin() {
   const canValidate = hasTargetCoords && withinRadius;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 max-w-md w-full">
-        <h1 className="text-xl font-semibold text-slate-800 mb-2">Check-in de la visite</h1>
-        <p className="text-sm text-slate-500 mb-6">
-          Validez votre présence sur place en utilisant votre position GPS.
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col">
+      <AppNavbar />
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-600 shadow-sm p-8 max-w-md w-full">
+        <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100 mb-2">{t('checkin.title')}</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+          {t('checkin.subtitle')}
         </p>
 
         {step === STEP.LOADING_VISIT && (
-          <p className="text-slate-600 text-sm" role="status">
-            Recherche de la visite…
+          <p className="text-slate-600 dark:text-slate-400 text-sm" role="status">
+            {t('checkin.loadingVisit')}
           </p>
         )}
 
         {step === STEP.GETTING_POSITION && (
           <>
-            <p className="text-slate-600 text-sm mb-4" role="status">
-              Recherche de votre position GPS…
+            <p className="text-slate-600 dark:text-slate-400 text-sm mb-4" role="status">
+              {t('checkin.gettingPosition')}
             </p>
             <button
               type="button"
               disabled
-              className="w-full py-3 px-4 font-medium text-slate-400 bg-slate-200 rounded-lg cursor-not-allowed"
+              className="w-full py-3 px-4 font-medium text-slate-400 dark:text-slate-500 bg-slate-200 dark:bg-slate-600 rounded-lg cursor-not-allowed"
             >
-              Recherche GPS…
+              {t('checkin.gpsSearch')}
             </button>
           </>
         )}
 
         {step === STEP.ERROR && error && (
-          <div className="p-4 mb-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="p-4 mb-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
             {error}
           </div>
         )}
 
         {step === STEP.POSITION_FOUND && position && (
           <>
-            <div className="mb-4 p-4 bg-slate-50 border border-slate-200 rounded-lg text-xs font-mono space-y-2">
+            <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg text-xs font-mono space-y-2 text-slate-700 dark:text-slate-300">
               <p>
-                <span className="text-slate-500">📍 Cible :</span>{' '}
+                <span className="text-slate-500 dark:text-slate-400">📍 {t('checkin.targetLabel')}</span>{' '}
                 {hasTargetCoords
                   ? `[${targetLat.toFixed(5)}, ${targetLng.toFixed(5)}]`
-                  : 'Non géolocalisée'}
+                  : t('checkin.notLocated')}
               </p>
               <p>
-                <span className="text-slate-500">🚶 Moi :</span>{' '}
+                <span className="text-slate-500 dark:text-slate-400">🚶 {t('checkin.meLabel')}</span>{' '}
                 [{position.lat.toFixed(5)}, {position.lng.toFixed(5)}]
               </p>
               {distanceMeters != null && (
                 <p>
-                  <span className="text-slate-500">📏 Distance calculée :</span> {distanceMeters} m
+                  <span className="text-slate-500 dark:text-slate-400">📏 {t('checkin.distanceLabel')}</span> {distanceMeters} m
                 </p>
               )}
               <p>
-                <span className="text-slate-500">🔒 Rayon autorisé :</span> {ALLOWED_RADIUS_METERS} m
+                <span className="text-slate-500 dark:text-slate-400">🔒 {t('checkin.radiusLabel')}</span> {ALLOWED_RADIUS_METERS} m
               </p>
             </div>
 
             {hasTargetCoords && distance != null && distance > ALLOWED_RADIUS_METERS && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                ⛔ Vous êtes trop loin ({distance} m). Rapprochez-vous à moins de {ALLOWED_RADIUS_METERS} m.
+              <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
+                ⛔ {t('checkin.tooFar', { distance, radius: ALLOWED_RADIUS_METERS })}
               </div>
             )}
 
             {hasTargetCoords && withinRadius && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
-                ✅ Position validée ({distance} m). Vous pouvez faire le Check-in.
+              <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-green-800 dark:text-green-200 text-sm">
+                ✅ {t('checkin.positionValidated', { distance })}
               </div>
             )}
 
             {hasTargetCoords && distance == null && (
-              <p className="mb-4 text-slate-600 text-sm">
-                Calcul de la distance en cours…
+              <p className="mb-4 text-slate-600 dark:text-slate-400 text-sm">
+                {t('checkin.calculatingDistance')}
               </p>
             )}
 
             {!hasTargetCoords && (
-              <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
-                Cette famille n&apos;est pas géolocalisée. Le check-in par distance n&apos;est pas possible.
+              <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-amber-800 dark:text-amber-200 text-sm">
+                {t('checkin.familyNotLocated')}
               </div>
             )}
 
-            <div className="mb-4 p-4 rounded-lg border border-blue-200 bg-blue-50/50">
-              <p className="text-sm font-medium text-blue-900 mb-2">
-                Photo preuve (recommandé)
+            <div className="mb-4 p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+                {t('checkin.proofPhotoLabel')}
               </p>
-              <p className="text-xs text-blue-700 mb-2">
-                Ajoutez une photo sur place pour attester de votre passage (livraison, lieu, etc.).
+              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                {t('checkin.proofPhotoHint')}
               </p>
               <div className="flex flex-col gap-2">
-                <label className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-blue-300 bg-white text-blue-700 text-sm font-medium cursor-pointer hover:bg-blue-50">
+                <label className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-600 bg-white dark:bg-slate-700 text-blue-700 dark:text-blue-300 text-sm font-medium cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30">
                   <span>📷</span>
-                  <span>{proofPhoto ? 'Changer la photo' : 'Choisir une photo'}</span>
+                  <span>{proofPhoto ? t('checkin.changePhoto') : t('checkin.choosePhoto')}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -257,15 +253,16 @@ function VisitCheckin() {
                     <img
                       src={proofPhoto}
                       alt="Aperçu"
-                      className="h-16 w-16 object-cover rounded border border-slate-200"
+                      className="h-16 w-16 object-cover rounded border border-slate-200 dark:border-slate-600"
                     />
-                    <span className="text-xs text-slate-600 truncate flex-1">{proofPhotoFile}</span>
+                    <span className="text-xs text-slate-600 dark:text-slate-400 truncate flex-1">{proofPhotoFile}</span>
                     <button
                       type="button"
                       onClick={() => { setProofPhoto(''); setProofPhotoFile(null); }}
-                      className="text-xs text-red-600 hover:underline"
+                      className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 text-sm font-medium text-red-700 dark:text-red-400 hover:underline focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 rounded"
+                      aria-label={t('checkin.removePhoto')}
                     >
-                      Retirer
+                      {t('checkin.removePhoto')}
                     </button>
                   </div>
                 )}
@@ -276,35 +273,37 @@ function VisitCheckin() {
               type="button"
               onClick={handleValidate}
               disabled={!canValidate}
-              className={`w-full py-3 px-4 font-medium rounded-lg ${
+              className={`w-full min-h-[44px] py-3 px-4 font-medium rounded-lg focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 ${
                 canValidate
-                  ? 'text-white bg-blue-600 hover:bg-blue-700'
-                  : 'text-slate-400 bg-slate-200 cursor-not-allowed'
+                  ? 'text-white bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600'
+                  : 'text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-600 cursor-not-allowed'
               }`}
+              aria-disabled={!canValidate}
             >
-              {canValidate ? 'Valider ma présence' : 'Valider ma présence'}
+              {t('checkin.validatePresence')}
             </button>
           </>
         )}
 
         {step === STEP.SUBMITTING && (
-          <p className="text-slate-600 text-sm" role="status">
-            Validation en cours…
+          <p className="text-slate-600 dark:text-slate-400 text-sm" role="status">
+            {t('checkin.submitting')}
           </p>
         )}
 
         {step === STEP.SUCCESS && (
-          <p className="text-green-700 font-medium" role="status">
-            Visite validée. Redirection…
+          <p className="text-green-700 dark:text-green-400 font-medium" role="status">
+            {t('checkin.success')}
           </p>
         )}
 
         <Link
           to="/my-missions"
-          className="mt-6 block text-center text-sm text-slate-500 hover:text-slate-700"
+          className="mt-6 block text-center min-h-[44px] flex items-center justify-center text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 rounded"
         >
-          Retour aux missions
+          {t('checkin.backToMissions')}
         </Link>
+      </div>
       </div>
     </div>
   );

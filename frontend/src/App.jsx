@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext.jsx';
+import { useLanguageDirection } from './hooks/useLanguageDirection.js';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import Register from './pages/Register.jsx';
@@ -11,10 +12,12 @@ import Inventory from './pages/Inventory.jsx';
 import MyMissions from './pages/MyMissions.jsx';
 import VisitCheckin from './pages/VisitCheckin.jsx';
 import Users from './pages/Users.jsx';
+import Settings from './pages/Settings.jsx';
 
 const ADMIN_COORD = ['ADMIN', 'COORDINATOR'];
 
 function App() {
+  useLanguageDirection();
   return (
     <AuthProvider>
       <BrowserRouter>
@@ -82,6 +85,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <Users />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

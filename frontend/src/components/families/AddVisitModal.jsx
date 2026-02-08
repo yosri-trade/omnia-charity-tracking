@@ -1,19 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createVisit } from '../../services/visit.service.js';
 import { getVolunteers } from '../../services/user.service.js';
 import { calculateDistance } from '../../utils/geo.js';
 import { compressImageForUpload } from '../../utils/imageCompression.js';
 
-const TYPE_OPTIONS = [
-  { id: 'Alimentaire', label: 'Alimentaire' },
-  { id: 'Médical', label: 'Médical' },
-  { id: 'Social', label: 'Social' },
-  { id: 'Autre', label: 'Autre' },
-];
+const SpeechRecognitionAPI = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+const LANG_MAP = { fr: 'fr-FR', ar: 'ar-SA', en: 'en-US' };
 
-const STATUS_OPTIONS = [
-  { id: 'COMPLETED', label: 'Visite Réalisée' },
-  { id: 'PLANNED', label: 'Visite Planifiée' },
+const TYPE_OPTIONS = [
+  { id: 'Alimentaire', labelKey: 'types.alimentaire' },
+  { id: 'Médical', labelKey: 'types.medical' },
+  { id: 'Social', labelKey: 'types.social' },
+  { id: 'Autre', labelKey: 'types.autre' },
 ];
 
 function toDatetimeLocal(d) {
@@ -24,6 +23,7 @@ function toDatetimeLocal(d) {
 const MAX_DISTANCE_METERS = 500;
 
 function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordinates, onSuccess }) {
+  const { t, i18n } = useTranslation();
   const [dateTime, setDateTime] = useState(() => toDatetimeLocal(new Date()));
   const [status, setStatus] = useState('COMPLETED');
   const [types, setTypes] = useState([]);
@@ -36,6 +36,8 @@ function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordina
   const [isCheckingLocation, setIsCheckingLocation] = useState(false);
   const [proofPhoto, setProofPhoto] = useState('');
   const [proofPhotoFileName, setProofPhotoFileName] = useState('');
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const recognitionRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -79,6 +81,46 @@ function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordina
       prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
     );
   };
+
+  const toggleVoiceRecording = useCallback(() => {
+    if (!SpeechRecognitionAPI) {
+      setError(t('visit.notesVoiceUnsupported'));
+      return;
+    }
+    if (isVoiceRecording) {
+      recognitionRef.current?.stop();
+      setIsVoiceRecording(false);
+      return;
+    }
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new Recognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = LANG_MAP[i18n.language] || 'fr-FR';
+    recognition.onresult = (e) => {
+      let transcript = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) {
+          transcript += e.results[i][0].transcript;
+        }
+      }
+      if (transcript.trim()) {
+        setNotes((prev) => (prev ? `${prev} ${transcript}` : transcript));
+      }
+    };
+    recognition.onend = () => setIsVoiceRecording(false);
+    recognition.onerror = () => setIsVoiceRecording(false);
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsVoiceRecording(true);
+  }, [isVoiceRecording, i18n.language, t]);
+
+  useEffect(() => {
+    if (!isOpen && recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsVoiceRecording(false);
+    }
+  }, [isOpen]);
 
   const handleProofPhotoChange = async (e) => {
     const file = e.target.files?.[0];
@@ -168,9 +210,6 @@ function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordina
               checkInLocation,
               proofPhoto: proofPhoto || undefined,
             };
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/086136c2-e26c-4d80-bbd3-7e6f62415c89',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddVisitModal.jsx:submit COMPLETED',message:'Payload before createVisit',data:{payloadKeys:Object.keys(payload),hasProofPhoto:!!payload.proofPhoto},timestamp:Date.now(),hypothesisId:'H2',runId:'post-fix'})}).catch(()=>{});
-            // #endregion
             await createVisit(payload);
             onSuccess?.();
             handleClose();
@@ -203,88 +242,95 @@ function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordina
 
   if (!isOpen) return null;
 
-  // #region agent log
-  fetch('http://127.0.0.1:7242/ingest/086136c2-e26c-4d80-bbd3-7e6f62415c89',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AddVisitModal.jsx:render',message:'Modal form rendered',data:{status,isOpen,hasProofPhotoInForm:status==='COMPLETED'},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
+  const statusOptions = [
+    { id: 'COMPLETED', labelKey: 'visit.statusCompleted' },
+    { id: 'PLANNED', labelKey: 'visit.statusPlanned' },
+  ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center safe-area-modal">
       <div
-        className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm"
         onClick={handleClose}
         aria-hidden="true"
       />
       <div
-        className="relative w-full max-w-md bg-white rounded-xl shadow-xl"
+        className="relative w-full max-w-md max-h-[90vh] flex flex-col bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-600"
         role="dialog"
         aria-modal="true"
         aria-labelledby="visit-modal-title"
       >
-        <div className="border-b border-slate-200 px-6 py-4">
-          <h2 id="visit-modal-title" className="text-lg font-semibold text-slate-800">
-            Nouvelle visite
+        {/* Header fixe */}
+        <div className="shrink-0 border-b border-slate-200 dark:border-slate-600 px-6 py-4 bg-white dark:bg-slate-800 rounded-t-xl">
+          <h2 id="visit-modal-title" className="text-lg font-semibold text-slate-800 dark:text-slate-100">
+            {t('visit.newVisit')}
           </h2>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 flex overflow-hidden">
+          {/* Body scrollable */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0 overscroll-contain [&_input]:scroll-mt-2 [&_input]:scroll-mb-2 [&_select]:scroll-mt-2 [&_select]:scroll-mb-2 [&_textarea]:scroll-mt-2 [&_textarea]:scroll-mb-2 [&_button]:scroll-mt-2 [&_button]:scroll-mb-2">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300 text-sm">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="visit-datetime" className="block text-sm font-medium text-slate-700 mb-1">
-              Date et Heure
+            <label htmlFor="visit-datetime" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('visit.dateTime')}
             </label>
             <input
               id="visit-datetime"
               type="datetime-local"
               value={dateTime}
               onChange={handleDateTimeChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+              aria-required="true"
             />
           </div>
 
           <div>
-            <label htmlFor="visit-status" className="block text-sm font-medium text-slate-700 mb-1">
-              Statut
+            <label htmlFor="visit-status" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('visit.status')}
             </label>
             <select
               id="visit-status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full min-h-[44px] px-3 py-3 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+              aria-required="true"
             >
-              {STATUS_OPTIONS.map((opt) => (
+              {statusOptions.map((opt) => (
                 <option key={opt.id} value={opt.id}>
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </option>
               ))}
             </select>
           </div>
 
           {status === 'PLANNED' && (
-            <div>
-              <span className="block text-sm font-medium text-slate-700 mb-1">
-                Assigner à (optionnel)
+            <div role="group" aria-labelledby="visit-assign-label">
+              <span id="visit-assign-label" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                {t('visit.assignTo')}
               </span>
-              <p className="text-xs text-slate-500 mb-2">
-                Laisser vide pour rendre la mission visible à tous les bénévoles.
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                {t('visit.assignToHint')}
               </p>
-              <div className="max-h-32 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1.5">
+              <div className="max-h-32 overflow-y-auto border border-slate-200 dark:border-slate-600 dark:bg-slate-700/50 rounded-lg p-2 space-y-1.5">
                 {volunteers.length === 0 ? (
-                  <p className="text-sm text-slate-400">Aucun bénévole</p>
+                  <p className="text-sm text-slate-400 dark:text-slate-500">{t('visit.noVolunteers')}</p>
                 ) : (
                   volunteers.map((u) => (
                     <label
                       key={u._id}
-                      className="flex items-center gap-2 cursor-pointer text-sm text-slate-700"
+                      className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300 min-h-[44px] py-1"
                     >
                       <input
                         type="checkbox"
                         checked={assignedToIds.includes(u._id)}
                         onChange={() => toggleAssigned(u._id)}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        className="min-h-[22px] min-w-[22px] rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                        aria-label={`Assigner à ${u.name}`}
                       />
                       {u.name}
                     </label>
@@ -294,73 +340,99 @@ function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordina
             </div>
           )}
 
-          <div>
-            <span className="block text-sm font-medium text-slate-700 mb-2">Type d'aide</span>
+          <div role="group" aria-labelledby="visit-type-label">
+            <span id="visit-type-label" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">{t('visit.typeOfHelp')}</span>
             <div className="space-y-2">
               {TYPE_OPTIONS.map((opt) => (
                 <label
                   key={opt.id}
-                  className="flex items-center gap-2 cursor-pointer text-sm text-slate-700"
+                  className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 dark:text-slate-300 min-h-[44px] py-2"
                 >
                   <input
                     type="checkbox"
                     checked={types.includes(opt.id)}
                     onChange={() => toggleType(opt.id)}
-                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                    className="min-h-[22px] min-w-[22px] rounded border-slate-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                    aria-label={`${t('visit.typeOfHelp')}: ${t(opt.labelKey)}`}
                   />
-                  {opt.label}
+                  {t(opt.labelKey)}
                 </label>
               ))}
             </div>
           </div>
           <div>
-            <label htmlFor="notes" className="block text-sm font-medium text-slate-700 mb-1">
-              Notes
+            <label htmlFor="notes" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              {t('visit.notes')}
             </label>
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-              placeholder="Compte-rendu de la visite..."
-            />
+            <p id="notes-desc" className="sr-only">{t('visit.notesDesc')}</p>
+            <div className="relative">
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="w-full min-h-[88px] px-3 py-3 pr-12 border border-slate-300 dark:border-slate-500 dark:bg-slate-700 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0 resize-none"
+                placeholder="Compte-rendu de la visite..."
+                aria-describedby="notes-desc notes-voice-hint"
+              />
+              <button
+                type="button"
+                onClick={toggleVoiceRecording}
+                disabled={!SpeechRecognitionAPI}
+                title={t('visit.notesVoiceHint')}
+                aria-label={t('visit.notesVoiceHint')}
+                className={`absolute top-2 end-2 min-h-[36px] min-w-[36px] inline-flex items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800 ${
+                  isVoiceRecording
+                    ? 'bg-red-500 dark:bg-red-600 text-white animate-pulse'
+                    : SpeechRecognitionAPI
+                      ? 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-500'
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                }`}
+              >
+                <span aria-hidden>🎤</span>
+              </button>
+            </div>
+            <p id="notes-voice-hint" className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {t('visit.notesVoiceHint')}
+            </p>
           </div>
 
           {status === 'COMPLETED' && (
-            <div className="p-4 rounded-lg border border-blue-200 bg-blue-50/50">
-              <p className="text-sm font-medium text-blue-900 mb-2">
-                Photo preuve (recommandé)
+            <div className="p-4 rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20">
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+                {t('visit.proofPhoto')}
               </p>
-              <p className="text-xs text-blue-700 mb-2">
-                Justifiez la visite réalisée par une photo (livraison, lieu, famille, etc.).
+              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                {t('visit.proofPhotoHint')}
               </p>
               <div className="flex flex-col gap-2">
-                <label className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border-2 border-dashed border-blue-300 bg-white text-blue-700 text-sm font-medium cursor-pointer hover:bg-blue-50">
-                  <span>📷</span>
-                  <span>{proofPhoto ? 'Changer la photo' : 'Choisir une photo'}</span>
+                <label className="inline-flex items-center justify-center gap-2 min-h-[44px] px-5 py-3 rounded-lg border-2 border-dashed border-blue-300 dark:border-blue-600 bg-white dark:bg-slate-700 text-blue-800 dark:text-blue-200 text-sm font-medium cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/30 focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2">
+                  <span aria-hidden>📷</span>
+                  <span>{proofPhoto ? t('visit.changePhoto') : t('visit.choosePhoto')}</span>
                   <input
                     type="file"
                     accept="image/*"
                     capture="environment"
                     className="sr-only"
                     onChange={handleProofPhotoChange}
+                    aria-label="Choisir une photo preuve"
                   />
                 </label>
                 {proofPhoto && (
                   <div className="flex items-center gap-2">
                     <img
                       src={proofPhoto}
-                      alt="Aperçu"
+                      alt="Aperçu de la photo preuve"
                       className="h-16 w-16 object-cover rounded border border-slate-200"
                     />
                     <span className="text-xs text-slate-600 truncate flex-1">{proofPhotoFileName}</span>
                     <button
                       type="button"
                       onClick={() => { setProofPhoto(''); setProofPhotoFileName(''); }}
-                      className="text-xs text-red-600 hover:underline"
+                      className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 text-sm font-medium text-red-700 dark:text-red-400 hover:underline focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded"
+                      aria-label={t('visit.removePhoto')}
                     >
-                      Retirer
+                      {t('visit.removePhoto')}
                     </button>
                   </div>
                 )}
@@ -369,40 +441,44 @@ function AddVisitModal({ isOpen, onClose, familyId, familyStatus, familyCoordina
           )}
 
           {familyStatus === 'URGENT' && (
-            <label className="flex items-center gap-2 cursor-pointer p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <label className="flex items-center gap-2 cursor-pointer min-h-[44px] p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg scroll-mt-2 scroll-mb-2">
               <input
                 type="checkbox"
                 checked={resolveUrgency}
                 onChange={(e) => setResolveUrgency(e.target.checked)}
-                className="rounded border-amber-400 text-green-600 focus:ring-green-500"
+                className="min-h-[22px] min-w-[22px] rounded border-amber-400 text-green-600 focus:ring-2 focus:ring-green-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-0"
+                aria-label={t('visit.resolveUrgent')}
               />
-              <span className="text-sm font-medium text-amber-900">
-                ✅ Clore le dossier URGENT (Passer en ACTIVE)
+              <span className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                ✅ {t('visit.resolveUrgent')}
               </span>
             </label>
           )}
-
-          <div className="flex gap-3 pt-2">
+          </div>
+          {/* Footer sticky */}
+          <div className="shrink-0 sticky bottom-0 border-t border-slate-200 dark:border-slate-600 px-6 py-4 bg-white dark:bg-slate-800 rounded-b-xl">
+          <div className="flex gap-3">
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200"
+              className="flex-1 min-h-[44px] px-4 py-3 text-sm font-medium text-slate-800 dark:text-slate-200 bg-slate-200 dark:bg-slate-600 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-500 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
             >
-              Annuler
+              {t('visit.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting || isCheckingLocation}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 min-h-[44px] px-4 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
               {isCheckingLocation
-                ? '📍 Localisation en cours...'
+                ? `📍 ${t('visit.locating')}`
                 : submitting
-                  ? 'Enregistrement...'
+                  ? t('visit.saving')
                   : status === 'COMPLETED'
-                    ? '📍 Valider position & Enregistrer'
-                    : 'Enregistrer'}
+                    ? `📍 ${t('visit.validateAndSave')}`
+                    : t('visit.save')}
             </button>
+          </div>
           </div>
         </form>
       </div>

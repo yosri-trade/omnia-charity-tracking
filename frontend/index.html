@@ -1,11 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>OMNIA Charity Tracking</title>
+    <script>
+      (function () {
+        var theme = localStorage.getItem('omnia-theme');
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+        else if (theme === 'light') document.documentElement.classList.remove('dark');
+        else if (window.matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.classList.add('dark');
+        var lang = localStorage.getItem('omnia-lang');
+        if (lang === 'ar' || lang === 'fr' || lang === 'en') {
+          document.documentElement.setAttribute('lang', lang);
+          document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        }
+        var fontSize = localStorage.getItem('omnia-font-size');
+        if (fontSize === 'lg') document.documentElement.classList.add('font-size-large');
+        else if (fontSize === 'xl') document.documentElement.classList.add('font-size-xl');
+        else document.documentElement.classList.add('font-size-standard');
+        var fontWeight = localStorage.getItem('omnia-font-weight');
+        if (fontWeight === 'medium') document.documentElement.classList.add('font-medium');
+        else if (fontWeight === 'bold') document.documentElement.classList.add('font-bold');
+        else document.documentElement.classList.add('font-normal');
+      })();
+    </script>
   </head>
-  <body>
+  <body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 safe-area-body">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

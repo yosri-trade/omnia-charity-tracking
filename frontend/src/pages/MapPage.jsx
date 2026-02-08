@@ -2,11 +2,13 @@ import 'leaflet/dist/leaflet.css';
 import '../utils/leaflet-heat-init.js';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { getAllFamilies } from '../services/family.service.js';
 import HeatmapLayer from '../components/maps/HeatmapLayer.jsx';
 import UserLocationMarker from '../components/maps/UserLocationMarker.jsx';
+import AppNavbar from '../components/AppNavbar.jsx';
 
 // Fix des icônes Leaflet (problème courant avec Vite/Webpack)
 delete L.Icon.Default.prototype._getIconUrl;
@@ -24,7 +26,7 @@ function StatusBadge({ status }) {
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-        isUrgent ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+        isUrgent ? 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200' : 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
       }`}
     >
       {status}
@@ -33,6 +35,7 @@ function StatusBadge({ status }) {
 }
 
 function MapPage() {
+  const { t } = useTranslation();
   const [families, setFamilies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -52,27 +55,20 @@ function MapPage() {
         );
         setFamilies(withCoords);
       } catch (err) {
-        setError(err.response?.data?.error || err.message || 'Erreur lors du chargement.');
+        setError(err.response?.data?.error || err.message || t('map.loadError'));
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [t]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <header className="bg-white border-b border-slate-200 px-4 py-3 shrink-0 flex gap-3">
-          <Link to="/" className="text-sm text-slate-600 hover:text-slate-800">
-            ← Tableau de bord
-          </Link>
-          <Link to="/alerts" className="text-sm text-red-600 hover:text-red-800">
-            🔔 Alertes
-          </Link>
-        </header>
-        <div className="flex-1 flex items-center justify-center bg-slate-100">
-          <div className="animate-spin h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
+        <AppNavbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="animate-spin h-8 w-8 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full" />
         </div>
       </div>
     );
@@ -80,40 +76,26 @@ function MapPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <header className="bg-white border-b border-slate-200 px-4 py-3 shrink-0 flex gap-3">
-          <Link to="/" className="text-sm text-slate-600 hover:text-slate-800">
-            ← Tableau de bord
-          </Link>
-          <Link to="/alerts" className="text-sm text-red-600 hover:text-red-800">
-            🔔 Alertes
-          </Link>
-        </header>
-        <div className="flex-1 flex items-center justify-center bg-slate-100">
-          <p className="text-red-600">{error}</p>
+      <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900">
+        <AppNavbar />
+        <div className="flex-1 flex items-center justify-center">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
         </div>
       </div>
     );
   }
 
+  const count = families.length;
+  const familiesLabel = count === 1 ? t('map.familiesLocated', { count: 1 }) : t('map.familiesLocatedPlural', { count });
+
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="relative z-10 shrink-0 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/" className="text-sm text-slate-600 hover:text-slate-800">
-            ← Tableau de bord
-          </Link>
-          <Link to="/alerts" className="text-sm text-red-600 hover:text-red-800">
-            🔔 Alertes
-          </Link>
-          <Link to="/inventory" className="text-sm text-slate-600 hover:text-slate-800">
-            📦 Stocks
-          </Link>
-        </div>
-        <span className="text-sm text-slate-500">
-          {families.length} famille{families.length !== 1 ? 's' : ''} géolocalisée{families.length !== 1 ? 's' : ''}
+    <div className="flex flex-col min-h-screen bg-slate-50 dark:bg-slate-900">
+      <AppNavbar />
+      <div className="px-4 py-2 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-600 flex justify-end">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
+          {familiesLabel}
         </span>
-      </header>
+      </div>
       <div
         className="relative w-full shrink-0"
         style={{ height: '80vh', minHeight: 400 }}
@@ -121,10 +103,10 @@ function MapPage() {
         <button
           type="button"
           onClick={() => setShowHeatmap((v) => !v)}
-          className="absolute top-2 right-2 z-[1000] inline-flex items-center gap-2 rounded-lg bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-md ring-1 ring-slate-200 hover:bg-slate-50"
-          title={showHeatmap ? 'Masquer la heatmap' : 'Afficher la heatmap'}
+          className="absolute top-2 end-2 z-[1000] inline-flex items-center gap-2 min-h-[44px] min-w-[44px] rounded-lg bg-white dark:bg-slate-800 px-3 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 shadow-md ring-1 ring-slate-200 dark:ring-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900"
+          aria-label={showHeatmap ? t('map.heatmapHide') : t('map.heatmapShow')}
         >
-          🔥 {showHeatmap ? 'Masquer Heatmap' : 'Afficher Heatmap'}
+          <span aria-hidden>🔥</span> {showHeatmap ? t('map.heatmapHide') : t('map.heatmapShow')}
         </button>
         <MapContainer
           center={TUNISIA_CENTER}
@@ -145,15 +127,15 @@ function MapPage() {
             >
               <Popup>
                 <div className="min-w-[180px]">
-                  <p className="font-semibold text-slate-800 mb-1">{family.name}</p>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100 mb-1">{family.name}</p>
                   <div className="mb-2">
                     <StatusBadge status={family.status} />
                   </div>
                   <Link
                     to={`/families/${family._id}`}
-                    className="text-sm text-blue-600 hover:underline"
+                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 rounded min-h-[44px] inline-flex items-center"
                   >
-                    Voir le dossier →
+                    {t('map.viewDossier')} →
                   </Link>
                 </div>
               </Popup>
