@@ -25,7 +25,7 @@ L'**Association Omnia** est l'organisme bénéficiaire de cette solution. Elle �
 
 ---
 
-## 👥 Équipe
+## 👥 Équipe — BlackGold
 
 | Membre | Rôle |
 |--------|------|
