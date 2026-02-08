@@ -59,7 +59,7 @@ function DashboardCharts({ families = [], visits = [] }) {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
         <h3 className="text-base font-semibold text-slate-800 mb-4">Répartition des Besoins</h3>
         {hasNeedsData ? (
-          <div className="h-[280px]">
+          <div className="h-[280px] min-h-[200px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -90,7 +90,7 @@ function DashboardCharts({ families = [], visits = [] }) {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
         <h3 className="text-base font-semibold text-slate-800 mb-4">Visites cette semaine</h3>
         {hasWeekData ? (
-          <div className="h-[280px]">
+          <div className="h-[280px] min-h-[200px] w-full min-w-0">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={weekData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />

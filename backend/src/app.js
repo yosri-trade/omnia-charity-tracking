@@ -7,6 +7,7 @@ import alertRoutes from './routes/alert.routes.js';
 import itemRoutes from './routes/item.routes.js';
 import userRoutes from './routes/user.routes.js';
 import statsRoutes from './routes/stats.routes.js';
+import geocodeRoutes from './routes/geocode.routes.js';
 import { errorHandler, notFound } from './middleware/error.middleware.js';
 
 const app = express();
@@ -36,6 +37,7 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/geocode', geocodeRoutes);
 
 // Health check (optionnel)
 app.get('/api/health', (req, res) => {

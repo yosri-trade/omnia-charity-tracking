@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import L from 'leaflet';
+import api from '../../services/api.js';
 import { createFamily, updateFamily } from '../../services/family.service.js';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import UserLocationMarker from '../maps/UserLocationMarker.jsx';
@@ -15,15 +16,9 @@ L.Icon.Default.mergeOptions({
 
 const TUNISIA_CENTER = [34.0, 9.0];
 const MAP_ZOOM = 6;
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse';
 
 async function fetchReverseGeocode(lat, lng) {
-  const url = `${NOMINATIM_URL}?format=json&lat=${lat}&lon=${lng}`;
-  const res = await fetch(url, {
-    headers: { 'User-Agent': 'OMNIA-Charity-Tracking/1.0' },
-  });
-  if (!res.ok) throw new Error('Geocoding failed');
-  const data = await res.json();
+  const { data } = await api.get('/geocode/reverse', { params: { lat, lon: lng } });
   return data.display_name || '';
 }
 
